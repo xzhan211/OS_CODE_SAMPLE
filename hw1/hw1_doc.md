@@ -1,7 +1,7 @@
 ## HW1
 [Shell: Process control in Foreground and Background](https://oscourse.github.io/hw1.html)
 
-####0. multiple processes
+### 0. multiple processes
 Shell is main process, other command runs in shell is another process.
 
 ```c
@@ -18,7 +18,7 @@ if((pid = fork()) < 0){
 ```
 
 
-####1. Execute commands with multiple arguments.
+### 1. Execute commands with multiple arguments.
 Use execv(), put all the arguments into arr[], the last one is always "NULL".
 
 ```c
@@ -26,7 +26,7 @@ char* arr[] = {"ls", "-l", "-R", "-a", NULL};
 execv("/bin/ls", arr);
 ```
 
-####2. Execute commands in either foreground or background mode.
+### 2. Execute commands in either foreground or background mode.
 If there is no wait() in parent process, child process can be considered to run in background. In this case, user sees stuff in parent process first. 
 
 If wait() is used in parent process, child process will run first. In this case, user sees stuff in child process first. Let's say "child process is running in foreground".
@@ -50,7 +50,7 @@ if(pid == 0){
 
 ```
 
-####3. Maintain multiple processes running in background mode simultaneously.
+### 3. Maintain multiple processes running in background mode simultaneously.
 Without wait() in parent process, multiple processes can run in background simultaneously. 
 
 But, once the child process exit() without a wait() from parent process, the child process will become a zombie.
@@ -92,7 +92,7 @@ int main(){
 }
 ```
 
-####4. List all currently running background jobs using "listjobs" command.
+### 4. List all currently running background jobs using "listjobs" command.
 Here I just use global array to record background jobs. Once we get the pid about background job, kill() can be used to check whether the checked process is existing.
 
 If sig is 0, then no signal is sent, but existence and permission checks are still performed; this can be used to check for the existence of a process ID or process group ID that the caller is permitted to signal.
@@ -111,7 +111,7 @@ void listjobs(){
 }
 ```
 
-####5. Bring a background process to foreground using the fg command with process ID as argument.
+### 5. Bring a background process to foreground using the fg command with process ID as argument.
 
 Shell is parent process. Other command processes are child processes. Using wait() in parent process can bring background child process to foreground.
 
@@ -125,7 +125,7 @@ if(strcmp(tokens[0], "fg") == 0)
     waitpid(atoi(tokens[1]), status, 0);
 ```
 
-####6. The exit command should terminate your shell without orphan and zombie processes.
+### 6. The exit command should terminate your shell without orphan and zombie processes.
 See code from No.3 issue.
 
 
@@ -133,7 +133,7 @@ See code from No.3 issue.
 
 We can learn other good code from hw1.
 
-####A. how to malloc one/two dimensions char array with assert.
+### A. how to malloc one/two dimensions char array with assert.
 
 About assert, this macro can help programmers find bugs in their programs, or handle exceptional cases via a crash that will produce limited debugging output.
 
@@ -151,7 +151,7 @@ assert( (line = malloc(sizeof(char) * MAX_STRING_LEN)) != NULL);
 assert( (tokens = malloc(sizeof(char*)*MAX_TOKENS)) != NULL);
 ```
 
-####B. analyse tokens from string / dynamic reallocate more space
+### B. analyse tokens from string / dynamic reallocate more space
 
 ```c
 void tokenize (char * string){
@@ -177,7 +177,7 @@ void tokenize (char * string){
     }
 }
 ```
-####C. use stdin 
+### C. use stdin 
 
 ```c
 FILE *fp; // file struct for stdin
@@ -197,7 +197,7 @@ void read_command(){
     tokenize(line);
 }
 ```
-###D. loop input usable data
+### D. loop input usable data
 
 ```c
 int run_command() {
@@ -213,7 +213,7 @@ int main(){
 }
 ```
 
-###E. implement "cd" function
+### E. implement "cd" function
 
 ```c
 if(strcmp(tokens[0], "cd") == 0){
@@ -229,7 +229,7 @@ if(strcmp(tokens[0], "cd") == 0){
 }
 ```
 
-###F. implement all shell command
+### F. implement all shell command
 
 ```c
 if(pid == 0){
