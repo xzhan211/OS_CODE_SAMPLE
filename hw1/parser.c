@@ -11,13 +11,10 @@
 size_t MAX_LINE_LEN = 10000;
 size_t MAX_BACKGROUND_PROS = 200;
 
-
-
 // builtin commands
 #define EXIT_STR "exit"
 #define EXIT_CMD 0
 #define UNKNOWN_CMD 99
-
 
 FILE *fp; // file struct for stdin
 char **tokens;
@@ -47,7 +44,6 @@ Sigfunc *install_signal_handler(int signo, Sigfunc *handler){
 }
 
 void int_handler(int sig){
-    //printf("kill child!\n");
     wait(NULL);
 }
 
@@ -73,8 +69,7 @@ void initialize()
 	assert( (pidArr = malloc(sizeof(int)*MAX_BACKGROUND_PROS)) != NULL);
 }
 
-void tokenize (char * string)
-{
+void tokenize (char * string){
 	int token_count = 0;
 	int size = MAX_TOKENS;
 	char *this_token;
@@ -92,29 +87,24 @@ void tokenize (char * string)
 		// if there are more tokens than space ,reallocate more space
 		if(token_count >= size){
 			size*=2;
-
 			assert ( (tokens = realloc(tokens, sizeof(char*) * size)) != NULL);
 		}
 	}
 }
 
-void read_command() {
+void read_command(){
 	// getline will reallocate if input exceeds max length
 	assert( getline(&line, &MAX_LINE_LEN, fp) > -1);
 	if(strlen(line) == 1){
-		//line = "noCommand\n";
 		strcpy(line, "noCommand\n");
-		//printf("in noCommand\n");
 	}
 	printf("Shell read this line: %s\n", line);
 	tokenize(line);
 }
 
 int run_command() {
-
 	if (strcmp( tokens[0], EXIT_STR ) == 0)
 		return EXIT_CMD;
-
 	return UNKNOWN_CMD;
 }
 
@@ -166,64 +156,56 @@ int main(){
 			    exit(1);
             }
         }
-		if(pid >= 0){
-        //printf("pid == %d\n", pid);
-		int flag = strcmp(tokens[tokensSize-1], "&");
 
-		if(pid == 0){
-            //printf("In child\n");
-			int loopSize = 0;
-			if(flag == 0){
-				loopSize = tokensSize-1;
-				sleep(30);
-			}else
-				loopSize = tokensSize;
-			char* para[loopSize+1];
-			para[loopSize] = NULL;
+        if(pid >= 0){
 
-			for(int i=0; i<loopSize; i++)
-				para[i] = tokens[i];
+            int flag = strcmp(tokens[tokensSize-1], "&");
 
-			char * s1 = "/bin/";
-			char * s2 = tokens[0];
-			char *result = malloc(strlen(s1)+strlen(s2)+1);
-			//if (result == NULL) exit (1);
-			strcpy(result, s1);
-			strcat(result, s2);
-			execv(result, para);
-			exit(0);
-		}else{
-            //printf("In parent, flag == %d\n", flag);
-            if(flag != 0){
-				waitpid(pid, status, 0);
+            if(pid == 0){
+                //printf("In child\n");
+                int loopSize = 0;
+                if(flag == 0){
+                    loopSize = tokensSize-1;
+                    sleep(30);
+                }else
+                    loopSize = tokensSize;
+                char* para[loopSize+1];
+                para[loopSize] = NULL;
+
+                for(int i=0; i<loopSize; i++)
+                    para[i] = tokens[i];
+
+                char * s1 = "/bin/";
+                char * s2 = tokens[0];
+                char *result = malloc(strlen(s1)+strlen(s2)+1);
+                strcpy(result, s1);
+                strcat(result, s2);
+                execv(result, para);
+                exit(0);
             }else{
-                //printf("in background process!\n");
-                pidArr[arrPos] = pid;
-                //printf("line >> %s\n", line);
-                int length = snprintf( NULL, 0, "%d", pid);
-                char* str = malloc( length + 1 );
-                snprintf( str, length + 1, "%d", pid);
-                //printf("str >> %s\n", str);
-	            char* temp;
-                assert( (temp = malloc(sizeof(char) * MAX_STRING_LEN)) != NULL);
-                strcpy(temp, line);
-                strcat(temp, " with PID ");
-                strcat(temp, str);
-                strcat(temp, "\0");
-                //printf("temp >> %s\n", temp);
-                commandWithPid[arrPos] = temp;
-                //printf("array pos >> %d\n", arrPos);
-                //printf("commandWithPid >> %s\n", commandWithPid[arrPos]);
-                //printf("pidArr >> %d\n", pidArr[arrPos]);
-                free(str);
-                arrPos++;
-                if(arrPos == MAX_BACKGROUND_PROS)
-                    arrPos = 0;
+                //printf("In parent, flag == %d\n", flag);
+                if(flag != 0){
+                    waitpid(pid, status, 0);
+                }else{
+                    pidArr[arrPos] = pid;
+                    int length = snprintf( NULL, 0, "%d", pid);
+                    char* str = malloc( length + 1 );
+                    snprintf( str, length + 1, "%d", pid);
+                    char* temp;
+                    assert( (temp = malloc(sizeof(char) * MAX_STRING_LEN)) != NULL);
+                    strcpy(temp, line);
+                    strcat(temp, " with PID ");
+                    strcat(temp, str);
+                    strcat(temp, "\0");
+                    commandWithPid[arrPos] = temp;
+                    free(str);
+                    arrPos++;
+                    if(arrPos == MAX_BACKGROUND_PROS)
+                        arrPos = 0;
+                }
+                //printf("father last line!\n");
             }
-			//printf("father last line!\n");
-
-		}
-    }
+        }
 	} while( run_command() != EXIT_CMD);
 	return 0;
 }
