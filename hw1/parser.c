@@ -8,8 +8,9 @@
 //limits
 #define MAX_TOKENS 100
 #define MAX_STRING_LEN 100
-
 size_t MAX_LINE_LEN = 10000;
+size_t MAX_BACKGROUND_PROS = 200;
+
 
 
 // builtin commands
@@ -22,7 +23,9 @@ FILE *fp; // file struct for stdin
 char **tokens;
 char *line;
 int tokensSize;
-
+int* pidArr;
+char **commandWithPid;
+int arrPos = 0;
 
 /* type definition of "pointer to a function that takes integer argument and returns void */
 typedef void Sigfunc(int);
@@ -44,7 +47,7 @@ Sigfunc *install_signal_handler(int signo, Sigfunc *handler){
 }
 
 void int_handler(int sig){
-    printf("kill child!\n");
+    //printf("kill child!\n");
     wait(NULL);
 }
 
@@ -63,6 +66,11 @@ void initialize()
 	// open stdin as a file pointer
 	assert( (fp = fdopen(STDIN_FILENO, "r")) != NULL);
 
+    // allocate space for commandWithPid array
+	assert( (commandWithPid = malloc(sizeof(char*)*MAX_BACKGROUND_PROS)) != NULL);
+
+    // allocate space for pid array
+	assert( (pidArr = malloc(sizeof(int)*MAX_BACKGROUND_PROS)) != NULL);
 }
 
 void tokenize (char * string)
@@ -111,18 +119,24 @@ int run_command() {
 }
 
 
-void deal_child(int sig_no){
-    printf("kill child....\n");
-    wait(NULL);
-}
 
+
+void listjobs(){
+    char * status;
+    for(int i=0; i<arrPos; i++){
+        if(kill(pidArr[i], 0) == 0)
+            status = "RUNNING";
+        else
+            status = "FINISHED";
+        printf("%s Status: %s\n", commandWithPid[i], status);
+    }
+}
 
 
 
 int main(){
 
     install_signal_handler(SIGCHLD, int_handler);
-    //signal(SIGCHLD, deal_child);
     initialize();
 
 	do {
@@ -134,20 +148,26 @@ int main(){
 		if(strcmp(tokens[0], "cd") == 0){
 			char s[100] = {'\0'};
 			if(tokens[1][0] == '/'){
-				//printf("in root\n");
 				strcat(s, tokens[1]);
-				//printf("%s\n", s);
 			}else{
 				getcwd(s, 100);
 				strcat(s, "/");
 				strcat(s, tokens[1]);
 			}
 			chdir(s);
-		}else if((pid = fork()) < 0){
-			printf("fork failed\n");
-			exit(1);
-		}
-        printf("pid == %d\n", pid);
+		}else if(strcmp(tokens[0], "listjobs") == 0){
+            listjobs();
+        }else if(strcmp(tokens[0], "fg") == 0){
+            waitpid(atoi(tokens[1]), status, 0);
+        }else{
+            pid = fork();
+            if(pid < 0){
+			    printf("fork failed\n");
+			    exit(1);
+            }
+        }
+		if(pid >= 0){
+        //printf("pid == %d\n", pid);
 		int flag = strcmp(tokens[tokensSize-1], "&");
 
 		if(pid == 0){
@@ -155,7 +175,7 @@ int main(){
 			int loopSize = 0;
 			if(flag == 0){
 				loopSize = tokensSize-1;
-				sleep(10);
+				sleep(30);
 			}else
 				loopSize = tokensSize;
 			char* para[loopSize+1];
@@ -174,13 +194,36 @@ int main(){
 			exit(0);
 		}else{
             //printf("In parent, flag == %d\n", flag);
-			if(flag != 0){
-				// wait any child
+            if(flag != 0){
 				waitpid(pid, status, 0);
+            }else{
+                //printf("in background process!\n");
+                pidArr[arrPos] = pid;
+                //printf("line >> %s\n", line);
+                int length = snprintf( NULL, 0, "%d", pid);
+                char* str = malloc( length + 1 );
+                snprintf( str, length + 1, "%d", pid);
+                //printf("str >> %s\n", str);
+	            char* temp;
+                assert( (temp = malloc(sizeof(char) * MAX_STRING_LEN)) != NULL);
+                strcpy(temp, line);
+                strcat(temp, " with PID ");
+                strcat(temp, str);
+                strcat(temp, "\0");
+                //printf("temp >> %s\n", temp);
+                commandWithPid[arrPos] = temp;
+                //printf("array pos >> %d\n", arrPos);
+                //printf("commandWithPid >> %s\n", commandWithPid[arrPos]);
+                //printf("pidArr >> %d\n", pidArr[arrPos]);
+                free(str);
+                arrPos++;
+                if(arrPos == MAX_BACKGROUND_PROS)
+                    arrPos = 0;
             }
-			printf("father last line!\n");
+			//printf("father last line!\n");
 
 		}
+    }
 	} while( run_command() != EXIT_CMD);
 	return 0;
 }
